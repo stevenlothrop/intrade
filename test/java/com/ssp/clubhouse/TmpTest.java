@@ -36,7 +36,14 @@ public class TmpTest {
         NodeList nodes = (NodeList) result;
         for (int i = 0; i < nodes.getLength(); i++) {
             Node item = nodes.item(i);
-            System.out.println(item);
+            System.out.println("name:" + item.getNodeName());
+            System.out.println("id:" + item.getAttributes().getNamedItem("id").getTextContent());
+            NodeList childNodes = item.getChildNodes();
+            for (int j = 0; j< childNodes.getLength(); j++) {
+                Node node = childNodes.item(j);
+                System.out.println("childNodeName = " + node.getNodeName());
+                System.out.println("childNode = id " + node.getAttributes().getNamedItem("id").getTextContent());
+            }
         }
         System.out.println("done");
     }

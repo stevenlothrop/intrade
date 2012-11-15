@@ -25,8 +25,6 @@ public class Main {
             t.printStackTrace();
             System.exit(1);
         }
-
-
     }
 
     private static void run() throws InterruptedException, IOException {
@@ -47,17 +45,24 @@ public class Main {
 
         // 1) Active Contract Listing
         {
-            Fiber fiber = fiberGroup.create(FiberNames.ACTIVE_CONTRACT_LISTING);
-            fiber.execute(new Runnable() {
+            final Fiber activeContractListingFiber = fiberGroup.create(FiberNames.ACTIVE_CONTRACT_LISTING);
+            starterFiber.execute(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        ActiveContractListingProvider.load(Channels.LOGGING.activeContractListing, new URL(config.get("intrade.activecontractlisting.url")));
-                    } catch (IOException e) {
-                        Channels.errors.publish(e);
-                    }
+                    activeContractListingFiber.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                ActiveContractListingProvider activeContractListingProvider = ActiveContractListingProvider.load(Channels.LOGGING.activeContractListing, new URL(config.get("intrade.activecontractlisting.url")));
+                                Channels.REFDATA.activeContractListing.publish(activeContractListingProvider.activeContractListing);
+                            } catch (Throwable e) {
+                                Channels.errors.publish(e);
+                            }
+                        }
+                    });
                 }
             });
+
         }
 
         // Startup

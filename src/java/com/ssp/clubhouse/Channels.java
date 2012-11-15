@@ -1,5 +1,6 @@
 package com.ssp.clubhouse;
 
+import com.ssp.clubhouse.dataretreival.ActiveContractListingProvider;
 import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 
@@ -14,5 +15,10 @@ public class Channels {
     public static class LOGGING{
 
         public static final MemoryChannel<String> activeContractListing  = new MemoryChannel<String>();
+    }
+
+    public static class REFDATA {
+        public static final MemoryChannel<ActiveContractListingProvider.ActiveContractListing> activeContractListing  = new MemoryChannel<ActiveContractListingProvider.ActiveContractListing>();
+
     }
 }
