@@ -1,0 +1,613 @@
+ 
+    Log In Forgot your password or username ?
+
+Search Markets    Go
+Help & FAQ
+Home How it Works Markets
+Forum Sign Up  
+  Intrade API 
+Intrade API
+1. Introduction
+The Intrade API consists of two parts:
+Data Retrieval API – This is used for determining the unique IDs of the listed markets and for checking the current and historical market data for those markets. This API is a simple set of URLs with various parameters that is requested over HTTP.
+Trading API – This is used to log in and enter orders and to check individual data. E.g. account balance, trading history, open orders. This is a simple XML over HTTP based API. To avoid unnecessary overheads, there are no wrappers around the XML.
+This document contains instructions for both parts of the API. There is also some example code in various languages to help you get started.
+2. Terms and Conditions of Usage
+Users of the API must agree to the terms of usage which are available online at the following location: http://www.intrade.com/info/api/api_TandC.pdf
+If a user fails to abide by the Terms and Conditions or contravenes the Acceptable usage policy in this document, Intrade reserves the right to restrict access to the API at any time and without notice.
+3. Data Retrieval API
+Retrieving market data for intrade is a two step process.
+Find the IDs of the contracts (markets) that you are interested in.
+Using the contract IDs, get the current prices.
+3.1 Active contract listing
+This is a list of all active contract and contracts that have expired(settled) within the last 24hrs.
+http://api.intrade.com/jsp/XML/MarketData/xml.jsp
+The xml document is arranged in a hierarchical structure as follows:
+Event Class
+Event Group
+Event
+Contract
+To find the contract you are interested in, move down the tree searching for the relevant branch. Once you find a contract, you can find its ID and use this get market data using the market data interface.
+Note: If you only need a list of contracts in a single class (e.g. Financials) then a subset of the contracts can be requested using the XMLForClass.jsp (see below).
+Example response:
+<MarketData intrade.timestamp="1096377463359">
+  <EventClass id="19">
+    <name> <![CDATA[ Politics ]]></name>
+    <EventGroup id="307">
+      <name> <![CDATA[ 2008 Elections ]]></name>
+      <Event EndDate="1099419900000" StartDate="1099386600000" groupID="290" id="19658">
+        <Description />
+        <name> <![CDATA[ US Election Combinations ]]> </name>
+        <contract ccy="USD" id="145192" inRunning="false" state="O" tickSize="0.1" tickValue="0.01" type="PX">
+          <name> <![CDATA[ Republicans to retain control of Presidency, Senate & House of Representatives ]]></name>
+          <symbol> <![CDATA[ GOP.SWEEP.2008 ]]></symbol>
+          <totalVolume>1347</totalVolume>
+        </contract>
+      </Event>
+    </EventGroup>
+  </EventClass>
+</MarketData>
+3.2 All Contracts By Event Class
+To get a list of contracts in a specific class use the following url: A subset of this data based on EventClass(e.g. Politics, Financial etc.) can be requested with the following url:
+http://api.intrade.com/jsp/XML/MarketData/XMLForClass.jsp?classID=X
+where X is the id of the EventClass. E.g.:
+http://api.intrade.com/jsp/XML/MarketData/XMLForClass.jsp?classID=19
+This will bring back a document containing Political contracts only.
+3.3 Price Information
+Current price information is retrieved using the ContractBookXML.jsp.
+http://api.intrade.com/jsp/XML/MarketData/ContractBookXML.jsp
+Parameters:
+id - the id of the contract for which marketdata is to be returned. Multiple ids may be specified. (e.g. id=743474&id=34566&...). The id of a contract can be got from the active contract listing (xml.jsp)
+timestamp - a timestamp to indicate a cutoff period for marketdata. Contracts whose marketdata has not changed since this timestamp will not be displayed. This is useful for an application that are maintaining current information and only need information about updates. Timestamps are represented by the number of milliseconds since January 1, 1970, 00:00:00 GMT.
+depth - the depth of orders that are returned. This defaults to 5. i.e. a maximum of 15 bid/offer prices are returned. If you just need the best price you should pass in "depth=1"
+Example:
+http://api.intrade.com/jsp/XML/MarketData/ContractBookXML.jsp?id=743474&id=749429&timestamp=0
+Example response:
+<ContractBookInfo lastUpdateTime="1331563076323">
+  <contractInfo close="61.4" conID="743474" lstTrdPrc="60.7" lstTrdTme="1331563076323" state="O" vol="154111">
+    <symbol>2012.PRES.OBAMA</symbol>
+    <orderBook>
+      <bids>
+        <bid price="60.6" quantity="53"/>
+        <bid price="60.5" quantity="33"/>
+        <bid price="60.0" quantity="350"/>
+        <bid price="59.9" quantity="173"/>
+        <bid price="59.8" quantity="78"/>
+      </bids>
+      <offers>
+        <offer price="61.0" quantity="7"/>
+        <offer price="61.5" quantity="15"/>
+        <offer price="61.6" quantity="520"/>
+        <offer price="61.7" quantity="2"/>
+        <offer price="61.9" quantity="55"/>
+      </offers>
+    </orderBook>
+  </contractInfo>
+</ContractBookInfo>
+3.4 Contract Information
+Other contract data can be retrieved using ConInfo.jsp.
+http://api.intrade.com/jsp/XML/MarketData/ConInfo.jsp
+Parameters:
+id - the id of the contract for which information is to be returned. Multiple ids may be specified. (e.g. id=23423&id=34566&...). The id of a contract can be got from the active contract listing (xml.jsp)
+Example:
+http://api.intrade.com/jsp/XML/MarketData/ConInfo.jsp?id=743474
+Example response:
+<conInfo>
+   <contract ccy="USD" close="61.4" conID="743474" dayhi="61.0" daylo="60.6" dayvol="71"
+             lifehi="69.9"
+             lifelo="45.1"
+             lstTrdPrc="60.7"
+             lstTrdTme="1331563076323"
+             maxMarginPrice="100.0"
+             minMarginPrice="0.0"
+             state="O"
+             tickSize="0.1"
+             tickValue="0.01"
+             totalvol="154.1k"
+             type="PX"
+             marginLinked="false"
+             marginGroupId="" >
+      <symbol>2012.PRES.OBAMA</symbol>
+   </contract>
+</conInfo>
+Where:
+marginLinked - indicates if contract is linked for margining. Values (String): ["true" | "false"]
+marginGroupId - id of the margin group (only for contracts which are linked for margining)
+3.5 Historical Trading Info (Closing Prices)
+Historical closing price and session hi/lo data can be retrieved using the following ClosingPrice.jsp page.
+http://api.intrade.com/jsp/XML/MarketData/ClosingPrice.jsp
+Parameters:
+conID - the id of the contract for which information is to be returned. Single id only. The id of a contract can be got from the active contract listing (xml.jsp)
+Example:
+http://api.intrade.com/jsp/XML/MarketData/ClosingPrice.jsp?conID=743474
+Example response:
+<ClosingPrice timestamp="1331564709600">
+  <cp date="8:01AM 03/09/12 GMT" dt="1331280067000" price="61.0" sessionHi="61.4" sessionLo="60.2"/>
+  <cp date="8:00AM 03/10/12 GMT" dt="1331366451000" price="61.0" sessionHi="61.6" sessionLo="61.0"/>
+  <cp date="8:00AM 03/11/12 GMT" dt="1331452853000" price="61.2000007629394" sessionHi="61.6" sessionLo="60.9"/>
+  <cp date="8:01AM 03/12/12 GMT" dt="1331539267000" price="61.4000015258789" sessionHi="61.4" sessionLo="60.8"/>
+</ClosingPrice>
+3.6 Daily Time and Sales
+Time and Sales data information is retrieved using the TimeAndSales.jsp. You can get data for the last 24 hours only.
+https://api.intrade.com/jsp/XML/TradeData/TimeAndSales.jsp?conID=XXX
+Parameters:
+conID - the id of the contract for which marketdata is to be returned. Single id only. The id of a contract can be got from the active contract listing (xml.jsp)
+Output:
+The data is returned in CSV format.
+The format is:
+Timestamp in ms, GMT Data/Time, Trade Price, Trade Quantity.
+Example:
+https://api.intrade.com/jsp/XML/TradeData/TimeAndSales.jsp?conID=749429
+Example response:
+1331479667038,	15:27:47 03/11/12 GMT,	48.2,	1
+1331481103224,	15:51:43 03/11/12 GMT,	48.2,	1
+1331488061927,	17:47:41 03/11/12 GMT,	47.9,	2
+1331488183378,	17:49:43 03/11/12 GMT,	47.9,	1
+1331489091098,	18:04:51 03/11/12 GMT,	48.2,	1
+4 Trading API
+4.1 Introduction
+This document explains the usage of the xml interface to the intrade system. It does not explain the working of intrade exchange, so users should be familiar with normal usage (using html interface) before attempting to use this interface.
+4.2 Request Format
+Requests should be posted over http using SSL.
+The url that will handle requests on LIVE system is:
+https://api.intrade.com/xml/handler.jsp
+Requests are posted to the intrade site as xml with the following format:
+<xmlrequest requestOp="{OPERATION}">
+  {OPERATION_PARAMETERS}
+</xmlrequest>
+Where:
+{OPERATION} - Request operation name. Supported operations are shown below.
+{OPERATION_PARAMETERS} - Other parameters required by the specified request operation. Supported parameters are described bellow for each operation.
+4.3 Response Format
+The response is an XML document with the following format.
+<tsResponse resultCode="{RESULTCODE}" requestOp="{OPERATION}" timestamp="{TIMESTAMP}" >
+  {RESPONSE_ELEMENTS}
+  <sessionData>{SESSION_DATA}</sessionData>
+</tsResponse>
+Where:
+{RESULTCODE} - 0 for success, otherwise -1
+{OPERATION} - Request operation name used in a request.
+{TIMESTAMP} - Request processing start time (epoch time in milliseconds).
+{RESPONSE_ELEMENTS} - Response specific elements (described bellow for each request/response).
+{SESSION_DATA} - The sessionData is an updated passport that can be used in subsequent requests. Each sessionData can be used multiple times and have a lifetime of approximately 5 hours. SessionData elements should only be sent over SSL. (Note that it is not necessary to use SSL on the test system).
+4.3.1 Error Response
+In a case of error during the following error response is generated.
+<tsResponse resultCode="-1" requestOp="{OPERATION}" timestamp="{TIMESTAMP}" >
+  <faildesc>{FAIL_DESCRIPTION}</faildesc>
+  <errorcode>{ERROR_CODE}</errorcode>
+</tsResponse>
+Where:
+{FAIL_DESCRIPTION} - Error description (String)
+{ERROR_CODE} - Error code which identifies the error (String). E.g.: "900", "GeneralError".
+4.4 Supported Operations
+getLogin - Login to get valid sessionData
+getBalance - Get frozen and available cash balances
+multiOrderRequest - Enter orders
+cancelMultipleOrdersForUser - Cancel multiple orders by order ID
+getCancelAllInContract - Cancel all orders in Contract
+getCancelAllBids - Cancel all buy orders in Contract
+getCancelAllOffers - Cancel all sell orders in Contract
+getCancelAllOrdersInEvent - Cancel all sell orders in Event
+cancelAllOrdersForUser - Cancel all orders for a user
+getPosForUser - Get positions for user
+getOpenOrders - Get open orders for user
+getOrdersForUser - Get orders by order ID
+getUserMessages - Get trading messages for users
+setAsRead - Delete trading messages for users
+4.4.1 Operation getLogin
+Use to login to get valid sessionData and username.
+Request format:
+<xmlrequest requestOp="getLogin">
+  <membershipNumber>{membershipNumber}</membershipNumber>
+  <password>{password}</password>
+</xmlrequest>
+Parameters:
+membershipNumber - member username (or account number)
+password - password
+Response Example:
+<tsResponse requestOp="getLogin" timestamp="1071059184925" resultCode="0">
+  <username>john.smith_856</username>
+  <faildesc><![CDATA[Ok]]></faildesc>
+  <sessionData>a5d....ABC587C</sessionData>
+</tsResponse>
+Elements:
+username - member's username
+sessionData - session data which validates other requests. Please save it and use it for other request calls in element 'sessionData'. 
+Note: 'sessionData element is valid for 5hrs or until the End Of Day (approx. 7am GMT).
+4.4.2 Operation getBalance
+Use to get frozen and available cash balances.
+Request format:
+<xmlrequest requestOp="getBalance">
+  <sessionData>a5d....ABC587C</sessionData>
+</xmlrequest>
+Parameters:
+sessionData - session data
+Response Example:
+<tsResponse requestOp="getBalance" timestamp="1071059326592" resultCode="0">
+  <ccy>USD</ccy>
+  <available>4172.68</available>
+  <frozen>95.67</frozen>
+  <faildesc><![CDATA[Ok]]></faildesc>
+  <sessionData>…</sessionData>
+</tsResponse>
+Elements:
+ccy - Currency code
+available - Available cash for trading
+frozen - Frozen cash
+4.4.3 Operation multiOrderRequest
+Use to enter new orders into the exchange.
+Request format:
+<xmlrequest requestOp="multiOrderRequest">
+  <cancelPrevious>{cancelPrevious}</cancelPrevious>
+  <order>{order1}</order>
+  <order>{order2}</order>
+  ...
+  <sessionData>...</sessionData>
+</xmlrequest>
+Parameters:
+cancelPrevious - (optional) - "true" if all previous orders in contracts for which orders are being entered should be cancelled. Default value is "false".
+sessionData - session data
+order - order tag contains a comma delimited set of attributes describing the order. 1..n order tags could be used.
+Order attributes are:
+conID - (Integer, required) - Contract ID. Numeric value. Example: 12232
+side - (Char(1), required) - Buy or Sell indicator. Values: B or S. Example: B
+limitPrice - (Double, required) - Limit Price for order. Values: Any multiple of contract tick size within contract min max range. Example: 15.6
+quantity - (Integer, required) - Quantity of order. Values: Integer greater than zero and less than max order size for contract. Example: 10
+orderType - (Char(1), optional) - Order Type (Limit, Touch or FillorKill). Values: L, T, F. Default value: L. Example: L
+timeInForce - (Char(3), required) - Order lifetime (Good Till Cancelled, Good Till Session, Good Till Time). Values: GTC, GFS, GTT. Example: GTC
+touchPrice - (Double, Required if orderType = ‘T’) - Touch price for touch orders. Values: Any multiple of contract tick size within contract min max range. Example: 50.7
+userReference - (String, optional) - User reference. Values: String up to 20 characters. Example: ST-5654
+Request Example:
+<xmlrequest requestOp="multiOrderRequest">
+  <cancelPrevious>true</cancelPrevious>
+  <order>conID=3,side=B,limitPrice=5,quantity=1,timeInForce=GFS</order>
+  <order>conID=4,side=B,limitPrice=5,quantity=1,timeInForce=GFS,orderType=F</order>
+  <sessionData>a5d....ABC587C</sessionData>
+</xmlrequest>
+The response contain information about all new orders entered.
+Response Example:
+<tsResponse requestOp="updateMultiOrder" timestamp="1068146606139" resultCode="0">
+
+  <order orderID="3486">
+    <conID>17</conID>
+    <side>BUY</side>
+    <quantity>10</quantity>
+    <limitprice>1.0</limitprice>
+    <success>true</success>
+    <timeInForce>0</timeInForce>
+    <timeToExpire>1064602760453</timeToExpire>
+  </order>
+
+  <order orderID="null">
+    <conID>50347</conID>
+    <side>SELL</side>
+    <quantity>10</quantity>
+    <limitprice>99.0</limitprice>
+    <success>false</success>
+    <failreason><![CDATA[The requested contract '50347' doesn't exist in the ContractCache or the Database]]>
+    </failreason>
+    <timeInForce>0</timeInForce>
+    <timeToExpire>1064602760453</timeToExpire>
+  </order>
+
+  <faildesc><![CDATA[Ok]]></faildesc>
+  <sessionData>...</sessionData>
+</tsResponse>
+4.4.4 Operation cancelMultipleOrdersForUser
+Use to cancel open orders.
+Request format:
+<xmlrequest requestOp="cancelMultipleOrdersForUser">
+  <orderID>{orderID}</orderID>
+  <sessionData>{sessionData}</sessionData>
+</xmlrequest>
+Parameters:
+orderID - open order ID. This tag can be used many times.
+sessionData - session data
+Request Example:
+<xmlrequest requestOp="cancelMultipleOrdersForUser">
+  <orderID>15235</orderID>
+  <orderID>15236</orderID>
+  <sessionData>a5d....ABC587C</sessionData>
+</xmlrequest>
+4.4.5 Order Cancel Operations: getCancelAllInContract, getCancelAllBids, getCancelAllOffers
+Used to cancel all orders, bids or offers in the specified contract.
+Request format:
+<xmlrequest requestOp="{cancelOperation}">
+  <contractID>{contractID}</contractID>
+  <sessionData>{sessionData}</sessionData>
+</xmlrequest>
+Parameters:
+cancelOperation - Specifies what type of orders will be cancelled. Possible values are: getCancelAllInContract, getCancelAllBids or getCancelAllOffers
+contractID - contract ID. This tag can be used only once.
+sessionData - session data
+Request Example:
+<xmlrequest requestOp="getCancelAllInContract">
+  <contractID>552</contractID>
+  <sessionData>a5d....ABC587C</sessionData>
+</xmlrequest>
+4.4.6 Operation cancelAllInEvent
+Used to cancel all orders in an event. The eventID can be retrieved from the all contracts xml tree.
+Request Example:
+<xmlrequest requestOp="cancelAllInEven">
+  <eventID>52</eventID>
+  <sessionData>a5d....ABC587C</sessionData>
+</xmlrequest>
+4.4.7 Operation cancelAllOrdersForUser
+Used to cancel all orders for a user. This cancels all open orders in all contracts.
+Request Example:
+<xmlrequest requestOp="cancelAllOrdersForUse">
+  <sessionData>a5d....ABC587C</sessionData>
+</xmlrequest>
+4.4.8 Operation getPosForUser
+Used to get all positions for a user or positions for the specified contract IDs.
+Request Example:
+<xmlrequest requestOp="getPosForUser">
+  <contractID>154</contractID>
+  <sessionData>a5d....ABC587C</sessionData>
+</xmlrequest>
+Parameters:
+contractID - contract ID. This tag is optional. If not specified, the result will contain all open positions.
+Response Example:
+<tsResponse requestOp="getPosForUser" resultCode="0">
+  <position conID="19">
+    <quantity>0</quantity>
+    <totalCost>0.0</totalCost>
+    <trueTotalCost>0.0</trueTotalCost>
+    <totalIM>0.0</totalIM>
+    <openIM>0.0</openIM>
+    <bidAmt>1.0</bidAmt>
+    <bidQty>10</bidQty>
+    <offerAmt>-99.0</offerAmt>
+    <offerQty>-10</offerQty>Ï
+    <netPL>193.0</netPL>
+  </position>
+  <faildesc>Ok</faildesc>
+  <sessionData>....</sessionData>
+</tsResponse>
+Parameters:
+conID - contract ID.
+quantity - position quantity (number of matched lots)
+totalCost - cost (price * quantity) for all matched orders. You can calculate the the average price as: totalCost / quantity
+trueTotalCost - this is true total cost when user trades on margin after the mark to market process.
+totalIM - total initial margin (frozen money)
+openIM - initial margin for open orders
+bidAmt - current bids amount (price * quantity) for all open buy orders (unmatched).
+bidQty - total number of lots for bids (unmatched).
+offerAmt - current offers amount (price * quantity) for all open sell orders (unmatched).
+offerQty - total number of lots for offers (unmatched).
+netPL - net profit or loss (trade PL + expiry PL)
+4.4.9 Operation getOpenOrders
+Used to get open orders.
+Request Example:
+<xmlrequest requestOp="getOpenOrders">
+  <contractID>154</contractID>
+  <sessionData>a5d....ABC587C</sessionData>
+</xmlrequest>
+Parameters:
+contractID - contract ID. This tag is optional. If not specified, the result will contain all open orders for the caller (user).
+Response Example:
+<tsResponse requestOp="getOpenOrders" timestamp="1071057351905"
+resultCode="0">
+  <order orderID="3513">
+    <conID>1</conID>
+    <quantity>1</quantity>
+    <limitprice>1.0</limitprice>
+    <type>Limit</type>
+    <side>B</side>
+    <quantity>1</quantity>
+    <originalQuantity>1</originalQuantity>
+    <timeInForce>GTC</timeInForce>
+    <visibleTime>1070475625464</visibleTime>
+  </order>
+  <order orderID="3510">
+  ...
+  </order>
+  <faildesc><![CDATA[Ok]]>
+  </faildesc>
+  <sessionData>…</sessionData>
+</tsResponse>
+Parameters:
+conID - contract ID
+quantity - current order quantity (order can be partially filled)
+originalQuantity - original quantity when order was entered
+timeInForce - time in force (GTC, GTS, GTT)
+type - order type (L, T or K)
+side - side (B or S)
+limitprice - limit price
+visibleTime - timestamp when this order became visible in the order book
+touchprice - (Optional) touch price set when order was created
+userReference - (Optional) user reference set when order was created
+4.4.10 Operation getOrdersForUser
+Used to get orders for a user by order ID.
+Request Example:
+<xmlrequest requestOp="getOrdersForUser">
+  <orderID>1545654</orderID>
+  <sessionData>a5d....ABC587C</sessionData>
+</xmlrequest>
+Parameters:
+orderID - (required, allowed multiple) - Order ID.
+Response is the same as for getOpenOrders operation.
+4.4.11 Operation getUserMessages
+Used to get trading notifications for a user. This will return the last 50 messages on a users account.
+Request format:
+<xmlrequest requestOp="getUserMessages">
+  <timestamp>{timestamp}</timestamp >
+  <sessionData>{sessionData}</sessionData>
+</xmlrequest>
+Parameters:
+timestamp - (optional, timestamp) - if supplied, returns messages since timestamp. Example: 1097253563961
+Response Example:
+
+<tsResponse requestOp="getUserMessages" resultCode="0" timestamp="1097253563961">
+  <msg msgID="10378145">
+    <msgID>10378145</msgID>
+    <conID>169431</conID>
+    <symbol>DOW.08OCT.-25</symbol>
+    <readFlag>false</readFlag>
+    <type>X</type>
+    <msg><![CDATA[654345]]>
+    </msg>
+    <price>33.5</price>
+    <quantity>1</quantity>
+    <side>B</side>
+    <timestamp>1097253548000</timestamp>
+  </msg>
+  <faildesc><![CDATA[Ok]]>
+  </faildesc>
+  <sessionData>...<sessionData>
+</tsResponse>
+Tags and attributes:
+msgID - message ID (unique identifier)
+conID - contract ID
+symbol - contract symbol
+readFlag - indicates that message has been read. Please see below setAsRead operation. Values: true, false
+type - message type
+D - Cancelled By exchange
+E - Contract Expiry
+J - Rejected Cancel Request
+M - Message
+R - Rejected Order
+S - Contract scratched
+T - Execution (Trade) - msg element is set to order ID which was executed
+V - Stop Activated
+X - Order Expired (for Good Till Session or Good Till Time orders)
+4.4.12 Operation setAsRead
+Used to delete trading notifications for a user.
+Request format:
+<xmlrequest requestOp="setAsRead">
+  <userNotificationID>{userNotificationID}</userNotificationID >
+  <sessionData>{sessionData}</sessionData>
+</xmlrequest>
+Parameters:
+userNotificationID - (required, multiple allowed) - message ID. Example: 2345353
+Request Example:
+<xmlrequest requestOp="setAsRead">
+  <userNotificationID>3456</userNotificationID>
+  <userNotificationID>5678</userNotificationID>
+  <sessionData>...</sessionData>
+</xmlrequest>
+4.4.13 Operation getTradesForUser
+Used to get information on trades that have happened on user account This can take either a timestamp or a contract id. If a timestamp is passed in, then all trades on this account after the timestamp on all contracts are given. If a contract is given then all trades on this contract are returned regardless of time.
+Request format:
+<xmlrequest requestOp="getTradesForUser">
+  <tradeStartTimestamp{tradeStartTimestamp}</tradeStartTimestamp>
+  <endDate>{endDate}</endDate>
+  <contractID>{contractID}</contractID>
+  <sessionData>{sessionData}</sessionData>
+</xmlrequest>
+Parameters:
+tradeStartTimestamp - (optional, timestamp) if provided, all trades on user account after the timestamp on all contracts are given. Example: 1080575475804
+endDate - (optional, date/time) - Limits the trade selection. See the appendix for known date patterns. Example: 2012-01-30
+contractID - (optional, Integer, none or one) contract ID - all trades on this contract are returned regardless of time. Example: 1234
+Response Example:
+<tsResponse requestOp="getTradesForUser" resultCode="0" timestamp="1080575475804">
+  <trade conID="72388">
+    <conID>72388</conID>
+    <orderID>14160028</orderID>
+    <side>B</side>
+    <quantity>1</quantity>
+    <price>30.0</price>
+    <executionTime>1075460956711</executionTime>
+  </trade>
+  <trade conID="98695">
+    <conID>98695</conID>
+    <orderID>16095163</orderID>
+    <side>B</side>
+    <quantity>1</quantity>
+    <price>51.0</price>
+    <executionTime>1077816966226</executionTime>
+  </trade>
+  <faildesc><![CDATA[Ok]]>
+  </faildesc>
+  <sessionData>...</sessionData>
+</tsResponse>
+Parameters:
+trade - (optional, multiple) - contains information about trade
+conID - contract ID
+orderID - order ID
+side - trade side. Values: B, S
+quantity - trade quantity
+price - trade price
+executionTime - (timestamp) - execution time in epoch time (ms)
+4.4.14 Operation getGSXToday
+Used to as a dummy request to check if the user has any trading messages. If the "checkMessage" element is set to "true" the response will contain the attribute "hasMessages" IF the user has unread messages.
+Request format:
+<xmlrequest requestOp="getGSXToday">
+  <checkMessages{checkMessages}</checkMessages>
+  <sessionData>{sessionData}</sessionData>
+</xmlrequest>
+Parameters:
+checkMessages - (optional, boolean) if set to true the response will contain number of unread messages if > 0. Values: true, false
+Response Example:
+<tsResponse requestOp="getGSXToday" resultCode="0" timestamp="1080575475804" hasMessages="1">
+  <faildesc><![CDATA[Ok]]>
+  </faildesc>
+  <sessionData>...</sessionData>
+</tsResponse>
+Attributes:
+hasMessages - (optional, Integer) - contains number of unread messages
+5. Acceptable usage policy for Intrade API
+5.1 Introduction
+Misuse of the API provided by Intrade could result in performance problem on the exchange due to flooding the exchange’s web-servers and/or database with unnecessary requests. Therefore the rules outlined in this document should be followed by anyone intending to use the API. Applications that do not conform to these rules will be blocked by the exchange, possibly without warning. Access to the exchange will only be re-allowed after the application has been demonstrated to conform using the Intrade test exchange. This will be a lengthy process, so it is in the interests of application writers to make sure their systems comply from the beginning. If there is any doubt, please contact the exchange before running code on the live system.
+This document outlines the basic rules. However, if at any point an application is deemed to be putting unnecessary load on the Intrade servers then it may be blocked without notice.
+There are many users of the API putting many millions of requests through the Intrade systems every day. No reasonable use of the API should result in loss of access.
+5.2 Market Data retrieval
+5.2.1 Contract Listing (/jsp/XML/MarketData/xml.jsp)
+As this is a large file, this should only be retrieved at start-up and not more than one time per 15 minutes.
+5.2.2 Market Data
+The ContractBookXML.jsp interface has been designed to allow efficient retrieval of market data updates. It should not be used to repeatedly get all market data for contracts (i.e. used without a "timestamp" parameter). Continual requests for market data for a contract or list of contracts without using a recent timestamp is inefficient and will result in a client being blocked.
+It is more efficient to request market data for multiple contracts simultaneously, rather than for a single request for each contract.
+You must only request market data for contracts that are listed in the xml.jsp contract listing. Multiple requests for contracts that do no exist will result in client being blocked.
+5.3. Trading Interface
+Applications should be designed to cache information regarding an account. Information on an account (i.e. balance, positions, orders, trades) will only change when an order is entered, cancelled, expired or a trade occurs. Therefore this information should only be requested at start-up or when either orders have been entered or when a user message is detected. Continuous unnecessary requests for positions, orders or trades will result in the client being blocked.
+In order to detect that a trade has occurred on an account, the user’s messages should be checked.
+You can poll for new messages by supplying a timestamp to the "getUserMessages" request. This returns any messages generated since the timestamp. The last message timestamp value should be used for the "getUserMessages" timestamp parameter.
+A new poll mechanism will be introduce soon.
+N.B. Orders are permitted via automated order entry practices [through the Exchanges application programmable interface (API) or otherwise]. The Exchange reserves the right to prohibit small-automated orders (9 lots and less) immediately ahead of non-automated orders.
+6. Test system
+We also have a test system available http://testexternal.intrade.com. Please feel free to open as many accounts as you need on this system. Your test account will be credited with $10,000 for testing.
+The url that will handle requests on TEST system is:
+http://testexternal.intrade.com/xml/handler.jsp
+Requests to test system cannot use SSL.
+Note: Markets on test system use different IDs.
+Start making predictions today!
+You can test making a prediction without an account by clicking the Make your Prediction! link below. 
+(oh and if you are wondering, it's free!)
+Make your Prediction  or Create an Account 
+Takes seconds to sign up!
+Real-time predictions
+
+Moonrise Kingdom to win Academy Award for Best Picture predicted to be below $0.08 / share
+
+Twilight: Breaking Dawn II to gross OVER $150.0M in opening weekend predicted to be below $0.50 / share
+New York, United States
+See more real-time predictions
+About Intrade
+What is Intrade all about?
+Contact Intrade
+Follow Us
+  
+Intrade Terms and Conditions
+Intrade Rules
+Market Rules
+Privacy Policy
+Data Protection Consent
+Trading Disclaimer
+T&Cs for Posting Content
+How Intrade Works
+The Basics
+Intrade Fees
+Documentation Requirements
+Customer Support
+Reports & Market Data
+Intrade Platform Stats
+Intrade Data
+Working with Students...
+Platforms & Interfaces
+New Interface (current)
+Mobile
+Intrade Practice
+API
+Old Interface (available but no longer developed)
+Copyright © 2007-2012, Intrade The Prediction Market Limited. All rights reserved. All Markets
+Support

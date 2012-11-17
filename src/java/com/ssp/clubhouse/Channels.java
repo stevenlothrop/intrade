@@ -1,8 +1,7 @@
 package com.ssp.clubhouse;
 
-import com.ssp.clubhouse.dataretreival.ActiveContractListingProvider;
+import com.ssp.clubhouse.refdata.ActiveContractListingProvider;
 import org.jetlang.channels.MemoryChannel;
-import org.jetlang.channels.Publisher;
 
 /**
  * User: stevenlothrop

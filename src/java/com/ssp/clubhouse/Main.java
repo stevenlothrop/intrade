@@ -1,7 +1,7 @@
 package com.ssp.clubhouse;
 
 import com.ssp.clubhouse.config.Config;
-import com.ssp.clubhouse.dataretreival.ActiveContractListingProvider;
+import com.ssp.clubhouse.refdata.ActiveContractListingProvider;
 import com.ssp.clubhouse.jetlang.FiberGroup;
 import com.ssp.clubhouse.logging.Logger;
 import com.ssp.clubhouse.util.DateProvider;
@@ -62,7 +62,6 @@ public class Main {
                     });
                 }
             });
-
         }
 
         // Startup
